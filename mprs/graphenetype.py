@@ -3,7 +3,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from .models import TagModel, CommentModel, ProjectModel, ScreenshotModel, ReplyModel
 
-class UserType(DjangoObjectType):
+class UserType(DjangoObjectType): 
     class Meta:
         model = get_user_model()
         fields = ['id', 'first_name', 'last_name', 'username', 'email']

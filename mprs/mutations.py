@@ -4,6 +4,7 @@ from graphene_django import DjangoObjectType
 from requests import request
 from .models import TagModel, CommentModel, ProjectModel, ScreenshotModel, ReplyModel
 from .graphenetype import UserType, TagType, CommentType, ProjectType, ScreenshotType, ReplyType
+from graphene_file_upload.scalars import Upload
 
 class CommentUpdateMutation(graphene.Mutation):
     response = graphene.Boolean()
@@ -196,18 +197,17 @@ class ProjectCreateMutation(graphene.Mutation):
     projectInstance = graphene.Field(ProjectType)
 
     class Arguments:
+        logo = Upload(required=True, description="Logo for the Product.",)
         name = graphene.String(required=True)
         subtitle = graphene.String(required=True)
         description = graphene.String(required=True)
         tags = graphene.List(graphene.String, required=True)
 
     @classmethod
-    def mutate(cls, root, info, name, subtitle, description, tags):
-        print("tag = ")
-        print(tags)
-        return cls(message="Done")
-
-
+    def mutate(cls, root, info, name, subtitle, description, tags, logo):
+        projectInstance = ProjectModel.objects.create(logo=logo,name=name, subtitle=subtitle, description=description) 
+        projectInstance.save()
+        return cls(projectInstance=projectInstance)
 
 
 class AllMutation(graphene.ObjectType):

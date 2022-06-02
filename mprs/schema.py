@@ -13,7 +13,7 @@ class Query(graphene.ObjectType):
         return TagModel.objects.all()
 
     project_by_id = graphene.Field(ProjectType, id=graphene.ID())
-    def resolve_project_by_id(root, info, id):
+    def resolve_project_by_id(root, info, id): 
         try:
             return ProjectModel.objects.get(pk=id)
         except ProjectModel.DoesNotExist:
