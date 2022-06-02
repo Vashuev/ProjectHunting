@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'dj_rest_auth.registration',
     'graphene_django',
+    'django_filters',
 
     'accounts',
     'mprs',
@@ -106,6 +107,7 @@ DATABASES = {
         'USER' : 'ossmlklg',
         'PASSWORD' : '0DDkWwFPlPY2AQ85cNy17PVkB6Tr4F8f',
         'HOST' : 'satao.db.elephantsql.com',
+         "ATOMIC_MUTATIONS": True,
     }
 }
 
@@ -166,5 +168,5 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # GRAPHENE = {
-#     'SCHEMA': 'mprs.schema.schema',
+#     "ATOMIC_MUTATIONS": True,
 # }

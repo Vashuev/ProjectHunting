@@ -26,7 +26,7 @@ class ProjectModel(models.Model):
     posted_at = models.DateTimeField(auto_now_add=True)
     owner_id = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     upvote = models.PositiveIntegerField(default=0)
-    tag = models.ManyToManyField(TagModel, related_name="tags")
+    tag = models.ManyToManyField(TagModel, related_name="projects")
 
     def __str__(self) -> str:
         return self.name

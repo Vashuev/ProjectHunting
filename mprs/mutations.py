@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
-from requests import request
 from .models import TagModel, CommentModel, ProjectModel, ScreenshotModel, ReplyModel
 from .graphenetype import UserType, TagType, CommentType, ProjectType, ScreenshotType, ReplyType
 from graphene_file_upload.scalars import Upload
+from django.db import transaction
 
 class CommentUpdateMutation(graphene.Mutation):
     response = graphene.Boolean()
@@ -25,7 +25,7 @@ class CommentUpdateMutation(graphene.Mutation):
                 return cls(response=False, message = "You are not the owner of this comment")
             commentInstance.comment = comment
             commentInstance.save()
-            return CommentUpdateMutation(commentInstance)
+            return CommentUpdateMutation(commentInstance=commentInstance)
         except CommentModel.DoesNotExist:
             return cls(response=False, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
@@ -48,7 +48,7 @@ class ReplyUpdateMutation(graphene.Mutation):
                 return cls(response=False, message = "You are not the owner of this reply")
             replyInstance.reply = reply
             replyInstance.save()
-            return ReplyUpdateMutation(replyInstance)
+            return ReplyUpdateMutation(replyInstance=replyInstance)
         except ReplyModel.DoesNotExist:
             return cls(response=False, message = "<Reply object > with id:{id} is not in database".format(id=id))
 
@@ -191,26 +191,42 @@ class ReplyCreateMutation(graphene.Mutation):
         except CommentModel.DoesNotExist:
             return cls(response=False, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
+
+def createAndAddNewTags(projectInstance, tags):
+    for tag_name in tags:
+        lowered = str(tag_name).lower()
+        searchtag = TagModel.objects.filter(tag_name=lowered)
+        if len(searchtag) == 0:
+            newtag = TagModel.objects.create(tag_name=lowered)
+            newtag.save()
+            projectInstance.tag.add(newtag)
+        else:
+            projectInstance.tag.add(searchtag[0])
+
 class ProjectCreateMutation(graphene.Mutation):
     response = graphene.Boolean()
     message = graphene.String()
     projectInstance = graphene.Field(ProjectType)
 
     class Arguments:
-        logo = Upload(required=True, description="Logo for the Product.",)
+        # logo = Upload(required=True, description="Logo for the Product.",)
         name = graphene.String(required=True)
         subtitle = graphene.String(required=True)
         description = graphene.String(required=True)
         tags = graphene.List(graphene.String, required=True)
 
     @classmethod
-    def mutate(cls, root, info, name, subtitle, description, tags, logo):
-        projectInstance = ProjectModel.objects.create(logo=logo,name=name, subtitle=subtitle, description=description) 
-        projectInstance.save()
-        return cls(projectInstance=projectInstance)
+    def mutate(cls, root, info, name, subtitle, description, tags):
+        try:
+            with transaction.atomic():
+                projectInstance = ProjectModel.objects.create(name=name, subtitle=subtitle, description=description, owner_id=info.context.user) 
+                projectInstance.save()
+                createAndAddNewTags(projectInstance, tags)
+                return cls(projectInstance=projectInstance)
+        except:
+            return cls(message="Tranactional Error")
 
-
-class AllMutation(graphene.ObjectType):
+class MprsMutation(graphene.ObjectType):
     update_Comment = CommentUpdateMutation.Field()
     update_Reply = ReplyUpdateMutation.Field()
     update_Project = ProjectUpdateMutation.Field()
