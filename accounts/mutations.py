@@ -5,27 +5,24 @@ from accounts.models import CustomUser
 from .serializers import ProfileSerializer
 from .grapheneTypes import ProfileType
 
+from mprs.decorators import login_required
+
 class UpdateProfile(graphene.Mutation):
     msg = graphene.String()
     profile = graphene.Field(ProfileType)
     status=graphene.Int()
     class Arguments:
-        id = graphene.ID(required=True)
         username = graphene.String()
-        first_name= graphene.String()
-        last_name = graphene.String()
         email = graphene.String()
-        # avatar = Upload()
+        avatar = Upload()
 
     @classmethod
-    def mutate(cls, root, info, id, **kwargs):
+    @login_required
+    def mutate(cls, root, info, **kwargs):
         try:
-            profile = CustomUser.objects.get(pk=id)
+            profile = CustomUser.objects.get(pk=info.context.user.id)
             serializer = ProfileSerializer(profile, data=kwargs, partial=True)
-            if profile != info.context.user:
-                obj=None
-                msg = "You aren't authorized to update other's Profiles."
-            elif serializer.is_valid():
+            if serializer.is_valid():
                 obj = serializer.save()
                 msg = "Updated"
             else:

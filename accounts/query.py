@@ -2,21 +2,18 @@
 import graphene
 from .grapheneTypes import ProfileType
 from accounts.models import CustomUser
+from .serializers import ProfileSerializer
 
 class AccountQuery(graphene.ObjectType):
-    message = graphene.String()
-    profile = graphene.Field(ProfileType, id=graphene.ID(required=True))
-    status = graphene.Int()
-    def resolve_profile(root, info, id=None):
+    get_profile = graphene.Field(ProfileType, id=graphene.Int())
+    def resolve_get_profile(root, info, id=-1):
         try:
-            profile = CustomUser.objects.get(pk=id)
-            if profile != info.context.user:
-                message = "You are not authorized to access others profile"
+            if id != -1:
+                profile = CustomUser.objects.get(pk=id)
+            elif info.context.user.is_authenticated:
+                profile = CustomUser.objects.get(pk=info.context.user.id)
             else:
-                message = "Accepted"
-            status = 200
-            return {message : message, profile: None, status: status}
+                profile = None
+            return profile
         except:
-            message = "<profile : {}> doesn't exits".format(id)
-            status = 400
-            return {message : message, profile: None, status:status}
+            return None

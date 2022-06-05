@@ -2,10 +2,12 @@ from .graphenetype import UserType, TagType, CommentType, ProjectType, Screensho
 from .models import TagModel, CommentModel, ProjectModel, ScreenshotModel, ReplyModel
 import graphene
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from .decorators import login_required
 
 class MprsQuery( graphene.ObjectType):
     all_project = graphene.List(ProjectType)
-    def resolve_all_project(root, info):
+
+    def resolve_all_project(root, info, message=None):
         return ProjectModel.objects.all()
 
     all_tag = graphene.List(TagType)
