@@ -1,3 +1,6 @@
+from distutils.log import error
+from email import message
+import errno
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
@@ -12,8 +15,9 @@ class UpvoteProject(graphene.Mutation):
         id = graphene.ID()
 
     projectInstance = graphene.Field(ProjectType)
-    error = graphene.String()
+    error = graphene.Boolean()
     votedByMe = graphene.Boolean()
+    message = graphene.String()
 
     @classmethod
     @login_required
@@ -26,17 +30,18 @@ class UpvoteProject(graphene.Mutation):
                 projectInstance.votedBy.add(curr_voter)
                 projectInstance.voteCount += 1
                 projectInstance.save()
-            return cls(projectInstance=projectInstance, votedByMe=True)
+            return cls(projectInstance=projectInstance, votedByMe=True, message="", error = False)
         except:
-            cls(error="<Project object > with id:{id} is not in database".format(id=id))
+            cls(message="<Project object > with id:{id} is not in database".format(id=id), error = True)
 
 class DownvoteProject(graphene.Mutation):
     class Arguments:
         id = graphene.ID()
 
     projectInstance = graphene.Field(ProjectType)
-    error = graphene.String()
+    error = graphene.Boolean()
     votedByMe = graphene.Boolean()
+    message = graphene.String()
 
     @classmethod
     @login_required
@@ -49,13 +54,13 @@ class DownvoteProject(graphene.Mutation):
                 projectInstance.votedBy.remove(curr_voter)
                 projectInstance.voteCount -= 1
                 projectInstance.save()
-            return cls(projectInstance=projectInstance, votedByMe=False)
+            return cls(projectInstance=projectInstance, votedByMe=False, error=False)
         except:
-            cls(error="<Project object > with id:{id} is not in database".format(id=id))
+            cls(message="<Project object > with id:{id} is not in database".format(id=id), error=True)
 
 class CommentUpdateMutation(graphene.Mutation):
-    response = graphene.Boolean()
     message = graphene.String()
+    error = graphene.Boolean()
     class Arguments:
         # The input arguments for this mutation
         comment = graphene.String(required=True)
@@ -70,15 +75,15 @@ class CommentUpdateMutation(graphene.Mutation):
         try:
             commentInstance = CommentModel.objects.get(pk=id)
             if commentInstance.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this comment")
+                return cls(error=True, message = "You are not the owner of this comment")
             commentInstance.comment = comment
             commentInstance.save()
-            return CommentUpdateMutation(commentInstance=commentInstance)
+            return CommentUpdateMutation(commentInstance=commentInstance, error=False)
         except CommentModel.DoesNotExist:
-            return cls(response=False, message = "<Comment object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
 class ReplyUpdateMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
     class Arguments:
         # The input arguments for this mutation
@@ -94,12 +99,12 @@ class ReplyUpdateMutation(graphene.Mutation):
         try:
             replyInstance = ReplyModel.objects.get(pk=id)
             if replyInstance.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this reply")
+                return cls(error=True, message = "You are not the owner of this reply")
             replyInstance.reply = reply
             replyInstance.save()
-            return ReplyUpdateMutation(replyInstance=replyInstance)
+            return ReplyUpdateMutation(replyInstance=replyInstance, error=False)
         except ReplyModel.DoesNotExist:
-            return cls(response=False, message = "<Reply object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Reply object > with id:{id} is not in database".format(id=id))
 
 def updateProjectTags(projectInstance, tags):
     assignedTags = projectInstance.tag.all()
@@ -131,7 +136,7 @@ def updateProjectTags(projectInstance, tags):
             projectInstance.tag.add(searchtag[0])
 
 class ProjectUpdateMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
 
     class Arguments:
@@ -160,14 +165,14 @@ class ProjectUpdateMutation(graphene.Mutation):
                     projectInstance.description = description
                 projectInstance.save()
                 updateProjectTags(projectInstance, tags)
-                return cls(projectInstance=projectInstance)
+                return cls(projectInstance=projectInstance, error=False)
         except ProjectModel.DoesNotExist:
-            return cls(response=False, message = "<Project object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
         except:
-            return cls(message="Tranactional Error")
+            return cls(message="Tranactional Error", error=True)
 
 class CommentDeleteMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
 
     class Arguments:
@@ -179,14 +184,14 @@ class CommentDeleteMutation(graphene.Mutation):
         try:
             comment = CommentModel.objects.get(pk=id)
             if comment.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this comment")
+                return cls(error=True, message = "You are not the owner of this comment")
             comment.delete()
-            return cls(response=True, message="Comment Deleted")
+            return cls(error=False, message="Comment Deleted")
         except CommentModel.DoesNotExist:
-            return cls(response=False, message = "<Comment object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
 class ReplyDeleteMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
 
     class Arguments:
@@ -198,14 +203,14 @@ class ReplyDeleteMutation(graphene.Mutation):
         try:
             reply = ReplyModel.objects.get(pk=id)
             if reply.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this reply")
+                return cls(error=True, message = "You are not the owner of this reply")
             reply.delete()
-            return cls(response=True, message="reply Deleted")
+            return cls(error=False, message="reply Deleted")
         except ReplyModel.DoesNotExist:
-            return cls(response=False, message = "<Reply object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Reply object > with id:{id} is not in database".format(id=id))
 
 class ProjectDeleteMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
 
     class Arguments:
@@ -217,14 +222,14 @@ class ProjectDeleteMutation(graphene.Mutation):
         try:
             project = ProjectModel.objects.get(pk=id)
             if project.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this Project")
+                return cls(error=True, message = "You are not the owner of this Project")
             project.delete()
-            return cls(response=True, message="Project Deleted")
+            return cls(error=False, message="Project Deleted")
         except ProjectModel.DoesNotExist:
-            return cls(response=False, message = "<Project object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
 
 class ScreenshotDeleteMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
 
     class Arguments:
@@ -236,14 +241,14 @@ class ScreenshotDeleteMutation(graphene.Mutation):
         try:
             screenshot = ScreenshotModel.objects.get(pk=id)
             if screenshot.owner_id != info.context.user:
-                return cls(response=False, message = "You are not the owner of this Screenshot")
+                return cls(error=True, message = "You are not the owner of this Screenshot")
             screenshot.delete()
-            return cls(response=True, message="Screenshot Deleted")
+            return cls(error=Fal, message="Screenshot Deleted")
         except ReplyModel.DoesNotExist:
-            return cls(response=False, message = "<Screenshot object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Screenshot object > with id:{id} is not in database".format(id=id))
 
 class CommentCreateMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
     commentInstance = graphene.Field(CommentType)
 
@@ -258,12 +263,12 @@ class CommentCreateMutation(graphene.Mutation):
             project = ProjectModel.objects.get(pk=id)
             commentInstance = CommentModel.objects.create(comment=comment, project_id = project, owner_id = info.context.user)
             commentInstance.save()
-            return cls(commentInstance=commentInstance)
+            return cls(commentInstance=commentInstance, error=False)
         except ProjectModel.DoesNotExist:
-            return cls(response=False, message = "<Project object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
 
 class ReplyCreateMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
     replyInstance = graphene.Field(ReplyType)
 
@@ -278,9 +283,9 @@ class ReplyCreateMutation(graphene.Mutation):
             comment = CommentModel.objects.get(pk=id)
             replyInstance = ReplyModel.objects.create(reply=reply,comment_id=comment, owner_id = info.context.user)
             replyInstance.save()
-            return cls(replyInstance=replyInstance)
+            return cls(replyInstance=replyInstance, error=False)
         except CommentModel.DoesNotExist:
-            return cls(response=False, message = "<Comment object > with id:{id} is not in database".format(id=id))
+            return cls(error=True, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
 
 def createAndAddNewTags(projectInstance, tags):
@@ -295,7 +300,7 @@ def createAndAddNewTags(projectInstance, tags):
             projectInstance.tag.add(searchtag[0])
 
 class ProjectCreateMutation(graphene.Mutation):
-    response = graphene.Boolean()
+    error = graphene.Boolean()
     message = graphene.String()
     projectInstance = graphene.Field(ProjectType)
 
@@ -314,9 +319,9 @@ class ProjectCreateMutation(graphene.Mutation):
                 projectInstance = ProjectModel.objects.create(logo=logo,name=name, subtitle=subtitle, description=description, owner_id=info.context.user) 
                 projectInstance.save()
                 createAndAddNewTags(projectInstance, tags)
-                return cls(projectInstance=projectInstance)
+                return cls(projectInstance=projectInstance, error=False)
         except:
-            return cls(message="Tranactional Error")
+            return cls(message="Tranactional Error", error=True)
 
 class MprsMutation(graphene.ObjectType):
     update_Comment = CommentUpdateMutation.Field()
