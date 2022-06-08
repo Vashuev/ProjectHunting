@@ -6,6 +6,8 @@ from .graphenetype import UserType, TagType, CommentType, ProjectType, Screensho
 from graphene_file_upload.scalars import Upload
 from django.db import DatabaseError, transaction
 from .decorators import login_required
+from core.settings import MEDIA_URL, BASE_DIR
+import os
 
 class UpvoteProject(graphene.Mutation):
     class Arguments:
@@ -131,6 +133,9 @@ def updateProjectTags(projectInstance, tags):
             projectInstance.tag.add(newtag)
         else:
             projectInstance.tag.add(searchtag[0])
+        
+        if len(ProjectModel.tag.all()) >= 5:
+            break
 
 class ProjectUpdateMutation(graphene.Mutation):
     error = graphene.Boolean()
@@ -138,7 +143,7 @@ class ProjectUpdateMutation(graphene.Mutation):
 
     class Arguments:
         id = graphene.ID(required=True)
-        logo = Upload(description="Logo for the Product.",)
+        logos = graphene.List(Upload)
         name = graphene.String()
         subtitle = graphene.String()
         description = graphene.String()
@@ -148,14 +153,16 @@ class ProjectUpdateMutation(graphene.Mutation):
 
     @classmethod
     @login_required
-    def mutate(cls, root, info, id, logo, tags, name=None, subtitle=None, description=None):
+    def mutate(cls, root, info, id, logos, tags, name=None, subtitle=None, description=None):
         try:
             with transaction.atomic():
                 projectInstance = ProjectModel.objects.get(pk=id)
+                last_path = str(BASE_DIR) + str(MEDIA_URL) + str(projectInstance.logo)
+                print(last_path)
                 if projectInstance.owner_id != info.context.user:
-                    return cls(error=True, message = "You are not the owner of this PRoject")
-                if logo != None:
-                    projectInstance.logo = logo
+                    return cls(error=True, message = "You are not the owner of this Project")
+                if len(logos):
+                    projectInstance.logo = logos[0]
                 if name!= None: 
                     projectInstance.name = name
                 if subtitle != None:
@@ -163,7 +170,9 @@ class ProjectUpdateMutation(graphene.Mutation):
                 if description != None:
                     projectInstance.description = description
                 projectInstance.save()
+                os.remove(last_path)
                 updateProjectTags(projectInstance, tags)
+                projectInstance.logo = info.context.build_absolute_uri(projectInstance.logo.url)
                 return cls(projectInstance=projectInstance, error=False)
         except ProjectModel.DoesNotExist:
             return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
@@ -297,6 +306,8 @@ def createAndAddNewTags(projectInstance, tags):
             projectInstance.tag.add(newtag)
         else:
             projectInstance.tag.add(searchtag[0])
+        if len(ProjectModel.tag.all()) >= 5:
+            break
 
 class ProjectCreateMutation(graphene.Mutation):
     error = graphene.Boolean()
