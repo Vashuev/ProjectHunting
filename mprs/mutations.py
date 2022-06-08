@@ -1,6 +1,3 @@
-from distutils.log import error
-from email import message
-import errno
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
@@ -155,6 +152,8 @@ class ProjectUpdateMutation(graphene.Mutation):
         try:
             with transaction.atomic():
                 projectInstance = ProjectModel.objects.get(pk=id)
+                if projectInstance.owner_id != info.context.user:
+                    return cls(error=True, message = "You are not the owner of this PRoject")
                 if logo != None:
                     projectInstance.logo = logo
                 if name!= None: 
