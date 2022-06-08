@@ -35,7 +35,7 @@ class UpvoteProject(graphene.Mutation):
                 projectInstance.voteCount -= 1
                 projectInstance.save()
 
-            return cls(projectInstance=projectInstance, votedByMe=shouldRemoveVote, message="", error = False)
+            return cls(projectInstance=projectInstance, votedByMe=not shouldRemoveVote, message="", error = False)
         except:
             cls(message="<Project object > with id:{id} is not in database".format(id=id), error = True)
 
