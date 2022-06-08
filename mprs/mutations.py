@@ -7,6 +7,52 @@ from graphene_file_upload.scalars import Upload
 from django.db import DatabaseError, transaction
 from .decorators import login_required
 
+class UpvoteProject(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID()
+
+    projectInstance = graphene.Field(ProjectType)
+    error = graphene.String()
+    votedByMe = graphene.Boolean()
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, id):
+        try:
+            projectInstance = ProjectModel.objects.get(pk=id)
+            all_voters = projectInstance.votedBy.all()
+            curr_voter = get_user_model().objects.get(pk=info.context.user.id)
+            if curr_voter not in all_voters:
+                projectInstance.votedBy.add(curr_voter)
+                projectInstance.voteCount += 1
+                projectInstance.save()
+            return cls(projectInstance=projectInstance, votedByMe=True)
+        except:
+            cls(error="<Project object > with id:{id} is not in database".format(id=id))
+
+class DownvoteProject(graphene.Mutation):
+    class Arguments:
+        id = graphene.ID()
+
+    projectInstance = graphene.Field(ProjectType)
+    error = graphene.String()
+    votedByMe = graphene.Boolean()
+
+    @classmethod
+    @login_required
+    def mutate(cls, root, info, id):
+        try:
+            projectInstance = ProjectModel.objects.get(pk=id)
+            all_voters = projectInstance.votedBy.all()
+            curr_voter = get_user_model().objects.get(pk=info.context.user.id)
+            if curr_voter in all_voters:
+                projectInstance.votedBy.remove(curr_voter)
+                projectInstance.voteCount -= 1
+                projectInstance.save()
+            return cls(projectInstance=projectInstance, votedByMe=False)
+        except:
+            cls(error="<Project object > with id:{id} is not in database".format(id=id))
+
 class CommentUpdateMutation(graphene.Mutation):
     response = graphene.Boolean()
     message = graphene.String()
@@ -283,3 +329,5 @@ class MprsMutation(graphene.ObjectType):
     create_Comment = CommentCreateMutation.Field()
     create_Reply = ReplyCreateMutation.Field()
     create_Project = ProjectCreateMutation.Field()
+    upvote_Project = UpvoteProject.Field()
+    downvote_Project = DownvoteProject.Field()

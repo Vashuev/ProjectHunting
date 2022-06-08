@@ -26,7 +26,6 @@ class ProjectModel(models.Model):
     posted_at = models.DateTimeField(auto_now_add=True)
     last_modify = models.DateTimeField(auto_now=True)
     owner_id = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    upvote = models.PositiveIntegerField(default=0)
     voteCount = models.PositiveIntegerField(default=0)
     url = models.URLField(default='https://jsonplaceholder.typicode.com/')
     tag = models.ManyToManyField(TagModel, related_name="projects")

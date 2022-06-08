@@ -3,8 +3,9 @@ from .models import TagModel, CommentModel, ProjectModel, ScreenshotModel, Reply
 import graphene
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from .decorators import login_required
+from .serializers import ProjectSerializer
 
-class MprsQuery( graphene.ObjectType):
+class MprsQuery(graphene.ObjectType):
     all_project = graphene.List(ProjectType)
 
     def resolve_all_project(root, info, message=None):
@@ -27,7 +28,12 @@ class MprsQuery( graphene.ObjectType):
     project_by_id = graphene.Field(ProjectType, id=graphene.ID())
     def resolve_project_by_id(root, info, id): 
         try:
-            return ProjectModel.objects.get(pk=id)
+            instance = ProjectModel.objects.get(pk=id)
+            project = ProjectSerializer(instance).data
+            # project.logo = info.context.build_absolute_uri(project.logo.url)
+            print("type : ", type(project))
+            print(project)
+            return project
         except ProjectModel.DoesNotExist:
             return None
     
