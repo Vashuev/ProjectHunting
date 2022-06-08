@@ -9,7 +9,11 @@ class MprsQuery(graphene.ObjectType):
     all_project = graphene.List(ProjectType)
 
     def resolve_all_project(root, info, message=None):
-        return ProjectModel.objects.all()
+        instances = ProjectModel.objects.all()
+        for intance in instances:
+            if intance.logo:
+                intance.logo = info.context.build_absolute_uri(intance.logo.url)
+        return instances
 
     all_tag = graphene.List(TagType)
     def resolve_all_tag(root, info):
@@ -28,11 +32,9 @@ class MprsQuery(graphene.ObjectType):
     project_by_id = graphene.Field(ProjectType, id=graphene.ID())
     def resolve_project_by_id(root, info, id): 
         try:
-            instance = ProjectModel.objects.get(pk=id)
-            project = ProjectSerializer(instance).data
-            # project.logo = info.context.build_absolute_uri(project.logo.url)
-            print("type : ", type(project))
-            print(project)
+            project = ProjectModel.objects.get(pk=id)
+            if project.logo:
+                project.logo = info.context.build_absolute_uri(project.logo.url)
             return project
         except ProjectModel.DoesNotExist:
             return None
