@@ -243,7 +243,7 @@ class ScreenshotDeleteMutation(graphene.Mutation):
             if screenshot.owner_id != info.context.user:
                 return cls(error=True, message = "You are not the owner of this Screenshot")
             screenshot.delete()
-            return cls(error=Fal, message="Screenshot Deleted")
+            return cls(error=False, message="Screenshot Deleted")
         except ReplyModel.DoesNotExist:
             return cls(error=True, message = "<Screenshot object > with id:{id} is not in database".format(id=id))
 
