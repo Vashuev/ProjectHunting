@@ -35,7 +35,6 @@ class UpdateProfile(graphene.Mutation):
             if serializer.is_valid():
                 print("goind")
                 obj = serializer.save()
-                obj.avatar = info.context.build_absolute_uri(obj.avatar.url)
                 logo_name = last_path.split('/')[-1]
                 if logo_name != 'default.jpg':
                     os.remove(last_path)

@@ -154,7 +154,6 @@ class ProjectUpdateMutation(graphene.Mutation):
                 projectInstance.save()
                 os.remove(last_path)
                 updateProjectTags(projectInstance, tags)
-                projectInstance.logo = info.context.build_absolute_uri(projectInstance.logo.url)
                 return cls(projectInstance=projectInstance, error=False)
         except ProjectModel.DoesNotExist:
             return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))

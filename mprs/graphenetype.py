@@ -1,3 +1,4 @@
+from doctest import FAIL_FAST
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
@@ -18,6 +19,19 @@ class ProjectType(DjangoObjectType):
         model = ProjectModel
         fields = '__all__'
 
+    votedByMe = graphene.Boolean()
+    logoUrl = graphene.String()
+    
+    def resolve_votedByMe(self, info):
+        curr_voter = get_user_model().objects.get(pk=info.context.user.id)
+        all_voters = self.votedBy.all()
+        if curr_voter in all_voters:
+            return True
+        else:
+            return False
+
+    def resolve_logoUrl(self, info):
+        return info.context.build_absolute_uri(self.logo.url)
 
 class ScreenshotType(DjangoObjectType):
     class Meta:
