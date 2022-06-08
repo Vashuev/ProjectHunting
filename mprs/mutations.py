@@ -11,7 +11,8 @@ import os
 
 class UpvoteProject(graphene.Mutation):
     class Arguments:
-        id = graphene.ID()
+        id = graphene.ID(required=True)
+        shouldRemoveVote = graphene.Boolean()
 
     projectInstance = graphene.Field(ProjectType)
     error = graphene.Boolean()
@@ -20,42 +21,23 @@ class UpvoteProject(graphene.Mutation):
 
     @classmethod
     @login_required
-    def mutate(cls, root, info, id):
+    def mutate(cls, root, info, id, shouldRemoveVote):
         try:
             projectInstance = ProjectModel.objects.get(pk=id)
             all_voters = projectInstance.votedBy.all()
             curr_voter = get_user_model().objects.get(pk=info.context.user.id)
-            if curr_voter not in all_voters:
+            if not shouldRemoveVote and curr_voter not in all_voters:
                 projectInstance.votedBy.add(curr_voter)
                 projectInstance.voteCount += 1
                 projectInstance.save()
-            return cls(projectInstance=projectInstance, votedByMe=True, message="", error = False)
-        except:
-            cls(message="<Project object > with id:{id} is not in database".format(id=id), error = True)
-
-class DownvoteProject(graphene.Mutation):
-    class Arguments:
-        id = graphene.ID()
-
-    projectInstance = graphene.Field(ProjectType)
-    error = graphene.Boolean()
-    votedByMe = graphene.Boolean()
-    message = graphene.String()
-
-    @classmethod
-    @login_required
-    def mutate(cls, root, info, id):
-        try:
-            projectInstance = ProjectModel.objects.get(pk=id)
-            all_voters = projectInstance.votedBy.all()
-            curr_voter = get_user_model().objects.get(pk=info.context.user.id)
-            if curr_voter in all_voters:
+            elif shouldRemoveVote and curr_voter in all_voters:
                 projectInstance.votedBy.remove(curr_voter)
                 projectInstance.voteCount -= 1
                 projectInstance.save()
-            return cls(projectInstance=projectInstance, votedByMe=False, error=False)
+
+            return cls(projectInstance=projectInstance, votedByMe=shouldRemoveVote, message="", error = False)
         except:
-            cls(message="<Project object > with id:{id} is not in database".format(id=id), error=True)
+            cls(message="<Project object > with id:{id} is not in database".format(id=id), error = True)
 
 class CommentUpdateMutation(graphene.Mutation):
     message = graphene.String()
@@ -345,4 +327,3 @@ class MprsMutation(graphene.ObjectType):
     create_Reply = ReplyCreateMutation.Field()
     create_Project = ProjectCreateMutation.Field()
     upvote_Project = UpvoteProject.Field()
-    downvote_Project = DownvoteProject.Field()
