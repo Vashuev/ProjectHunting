@@ -5,6 +5,7 @@ import graphene
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from .decorators import login_required
 from .serializers import ProjectSerializer
+from django.contrib.auth import get_user_model
 
 class MprsQuery(graphene.ObjectType):
     all_project = graphene.List(ProjectType)
@@ -41,3 +42,10 @@ class MprsQuery(graphene.ObjectType):
             return None
 
 
+    project_by_userid = graphene.List(ProjectType, id=graphene.ID(required=True))
+    def resolve_project_by_userid(root, info, id):
+        try:
+            owner = get_user_model().objects.get(pk=id)
+            return ProjectModel.objects.filter(owner_id=owner)
+        except:
+            return None
