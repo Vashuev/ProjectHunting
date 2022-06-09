@@ -116,7 +116,7 @@ def updateProjectTags(projectInstance, tags):
         else:
             projectInstance.tag.add(searchtag[0])
         
-        if len(ProjectModel.tag.all()) >= 5:
+        if len(projectInstance.tag.all()) >= 5:
             break
 
 class ProjectUpdateMutation(graphene.Mutation):
@@ -277,7 +277,7 @@ class ReplyCreateMutation(graphene.Mutation):
             return cls(error=True, message = "<Comment object > with id:{id} is not in database".format(id=id))
 
 
-def createAndAddNewTags(projectInstance, tags):
+def createAndAddTags(projectInstance, tags):
     for tag_name in tags:
         lowered = str(tag_name).lower()
         searchtag = TagModel.objects.filter(tag_name=lowered)
@@ -287,30 +287,43 @@ def createAndAddNewTags(projectInstance, tags):
             projectInstance.tag.add(newtag)
         else:
             projectInstance.tag.add(searchtag[0])
-        if len(ProjectModel.tag.all()) >= 5:
+
+        if len(projectInstance.tag.all()) >= 5:
             break
+
+def createAndAddScreenshot(projectInstance, screenshots):
+    for screenshot in screenshots:
+        instance = ScreenshotModel.objects.create(image=screenshot, project_id=projectInstance)
+        instance.save()
 
 class ProjectCreateMutation(graphene.Mutation):
     error = graphene.Boolean()
     message = graphene.String()
     projectInstance = graphene.Field(ProjectType)
+    screenshotInstances = graphene.List(ScreenshotType)
 
     class Arguments:
-        logo = Upload(required=True, description="Logo for the Product.",)
+        logos = graphene.List(Upload)
         name = graphene.String(required=True)
         subtitle = graphene.String(required=True)
         description = graphene.String(required=True)
         tags = graphene.List(graphene.String, required=True)
+        screenshots = graphene.List(Upload)
 
     @classmethod
     @login_required
-    def mutate(cls, root, info, logo, name, subtitle, description, tags):
+    def mutate(cls, root, info, logos, name, subtitle, description, tags, screenshots):
         try:
             with transaction.atomic():
-                projectInstance = ProjectModel.objects.create(logo=logo,name=name, subtitle=subtitle, description=description, owner_id=info.context.user) 
+                projectInstance = ProjectModel.objects.create(logo=logos[0],name=name, subtitle=subtitle, description=description, owner_id=info.context.user) 
                 projectInstance.save()
-                createAndAddNewTags(projectInstance, tags)
-                return cls(projectInstance=projectInstance, error=False)
+                print("created Project")
+                createAndAddTags(projectInstance, tags)
+                print('added tags')
+                createAndAddScreenshot(projectInstance, screenshots)
+                print("added screenshots")
+                screenshotInstances = ScreenshotModel.objects.filter(project_id=projectInstance)
+                return cls(projectInstance=projectInstance, screenshotInstances=screenshotInstances , error=False)
         except:
             return cls(message="Tranactional Error", error=True)
 

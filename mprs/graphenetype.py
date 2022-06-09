@@ -1,4 +1,3 @@
-from doctest import FAIL_FAST
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
@@ -37,6 +36,10 @@ class ScreenshotType(DjangoObjectType):
     class Meta:
         model = ScreenshotModel
         fields = '__all__'
+
+    screenshotUrl = graphene.String()
+    def resolve_screenshotUrl(self, info):
+        return info.context.build_absolute_uri(self.image.url)
 
 class CommentType(DjangoObjectType):
     class Meta:
