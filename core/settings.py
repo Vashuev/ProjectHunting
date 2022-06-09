@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
+import environ
+
+# Initialise environment variables
+env = environ.Env()
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xzbf&nb=ngfqu3-jt!if3qn!!of)vuu8(e*9&t+gf50)-7556&'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -104,10 +109,10 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ossmlklg',
-        'USER' : 'ossmlklg',
-        'PASSWORD' : '0DDkWwFPlPY2AQ85cNy17PVkB6Tr4F8f',
-        'HOST' : 'satao.db.elephantsql.com',
+        'NAME': env('NAME'),
+        'USER' : env('USER'),
+        'PASSWORD' : env('PASSWORD'),
+        'HOST' : env('HOST'),
          "ATOMIC_MUTATIONS": True,
     }
 }
