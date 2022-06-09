@@ -33,7 +33,6 @@ class UpdateProfile(graphene.Mutation):
                 data['avatar'] = avatars[0]
             serializer = ProfileSerializer(instance=profile, data=data, partial=True)
             if serializer.is_valid():
-                print("goind")
                 obj = serializer.save()
                 logo_name = last_path.split('/')[-1]
                 if logo_name != 'default.jpg':

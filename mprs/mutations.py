@@ -1,3 +1,4 @@
+from ast import Delete
 from django.contrib.auth import get_user_model
 import graphene
 from graphene_django import DjangoObjectType
@@ -119,9 +120,26 @@ def updateProjectTags(projectInstance, tags):
         if len(projectInstance.tag.all()) >= 5:
             break
 
+def updateScreenshot(projectInstance, screenshots):
+    for screenshot in screenshots:
+        instance = ScreenshotModel.objects.create(image=screenshot, project_id=projectInstance)
+        instance.save()
+
+def removeScreenshot(deleteScreenshot):
+    for screenshot_name in deleteScreenshot:
+        file_name = 'screenshots/' + screenshot_name.split('/')[-1]
+        full_path = str(BASE_DIR) + str(MEDIA_URL) +  file_name
+        os.remove(full_path)
+        instance = ScreenshotModel.objects.filter(image = file_name)
+        if len(instance):
+            instance[0].delete()
+        
+    
+
 class ProjectUpdateMutation(graphene.Mutation):
     error = graphene.Boolean()
     message = graphene.String()
+    screenshotInstances = graphene.List(ScreenshotType)
 
     class Arguments:
         id = graphene.ID(required=True)
@@ -130,31 +148,36 @@ class ProjectUpdateMutation(graphene.Mutation):
         subtitle = graphene.String()
         description = graphene.String()
         tags = graphene.List(graphene.String, required=True)
+        screenshots = graphene.List(Upload)
+        deleteScreenshot = graphene.List(graphene.String)
 
     projectInstance = graphene.Field(ProjectType)
-
     @classmethod
     @login_required
-    def mutate(cls, root, info, id, logos, tags, name=None, subtitle=None, description=None):
+    def mutate(cls, root, info, id, logos, tags,screenshots,deleteScreenshot, name=None, subtitle=None, description=None):
         try:
             with transaction.atomic():
                 projectInstance = ProjectModel.objects.get(pk=id)
                 last_path = str(BASE_DIR) + str(MEDIA_URL) + str(projectInstance.logo)
+                print("last logo :", projectInstance.logo)
                 print(last_path)
                 if projectInstance.owner_id != info.context.user:
                     return cls(error=True, message = "You are not the owner of this Project")
                 if len(logos):
+                    os.remove(last_path)
                     projectInstance.logo = logos[0]
-                if name!= None: 
+                if name!= None:
                     projectInstance.name = name
                 if subtitle != None:
                     projectInstance.subtitle = subtitle
                 if description != None:
                     projectInstance.description = description
                 projectInstance.save()
-                os.remove(last_path)
                 updateProjectTags(projectInstance, tags)
-                return cls(projectInstance=projectInstance, error=False)
+                removeScreenshot(deleteScreenshot)
+                updateScreenshot(projectInstance, screenshots)
+                screenshotInstances = ScreenshotModel.objects.filter(project_id=projectInstance)
+                return cls(projectInstance=projectInstance,screenshotInstances=screenshotInstances, error=False)
         except ProjectModel.DoesNotExist:
             return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
         except:
@@ -216,25 +239,6 @@ class ProjectDeleteMutation(graphene.Mutation):
             return cls(error=False, message="Project Deleted")
         except ProjectModel.DoesNotExist:
             return cls(error=True, message = "<Project object > with id:{id} is not in database".format(id=id))
-
-class ScreenshotDeleteMutation(graphene.Mutation):
-    error = graphene.Boolean()
-    message = graphene.String()
-
-    class Arguments:
-        id = graphene.ID()
-
-    @classmethod
-    @login_required
-    def mutate(cls, root, info, id):
-        try:
-            screenshot = ScreenshotModel.objects.get(pk=id)
-            if screenshot.owner_id != info.context.user:
-                return cls(error=True, message = "You are not the owner of this Screenshot")
-            screenshot.delete()
-            return cls(error=False, message="Screenshot Deleted")
-        except ReplyModel.DoesNotExist:
-            return cls(error=True, message = "<Screenshot object > with id:{id} is not in database".format(id=id))
 
 class CommentCreateMutation(graphene.Mutation):
     error = graphene.Boolean()
@@ -334,7 +338,6 @@ class MprsMutation(graphene.ObjectType):
     delete_Comment = CommentDeleteMutation.Field()
     delete_Reply = ReplyDeleteMutation.Field()
     delete_Project = ProjectDeleteMutation.Field()
-    delete_Screenshot = ScreenshotDeleteMutation.Field()
     create_Comment = CommentCreateMutation.Field()
     create_Reply = ReplyCreateMutation.Field()
     create_Project = ProjectCreateMutation.Field()
