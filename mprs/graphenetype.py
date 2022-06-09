@@ -22,12 +22,13 @@ class ProjectType(DjangoObjectType):
     logoUrl = graphene.String()
     
     def resolve_votedByMe(self, info):
-        curr_voter = get_user_model().objects.get(pk=info.context.user.id)
-        all_voters = self.votedBy.all()
-        if curr_voter in all_voters:
-            return True
-        else:
-            return False
+        if info.context.user.is_authenticated:
+            print("got user")
+            curr_voter = get_user_model().objects.get(pk=info.context.user.id)
+            all_voters = self.votedBy.all()
+            if curr_voter in all_voters:
+                return True
+        return False
 
     def resolve_logoUrl(self, info):
         return info.context.build_absolute_uri(self.logo.url)

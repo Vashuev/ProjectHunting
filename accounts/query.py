@@ -5,7 +5,7 @@ from accounts.models import CustomUser
 from .serializers import ProfileSerializer
 
 class AccountQuery(graphene.ObjectType):
-    get_profile = graphene.Field(ProfileType, id=graphene.Int(required=True))
+    get_profile = graphene.Field(ProfileType, id=graphene.Int())
 
     def resolve_get_profile(root, info, id=-1):
         try:
