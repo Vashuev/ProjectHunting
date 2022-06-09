@@ -37,7 +37,10 @@ class UpdateProfile(graphene.Mutation):
                 obj = serializer.save()
                 logo_name = last_path.split('/')[-1]
                 if logo_name != 'default.jpg':
-                    os.remove(last_path)
+                    try:
+                        os.remove(last_path)
+                    except:
+                        print("last avatar file doesn't exist on server")
                 msg = "Updated"
                 error = False
             else:
