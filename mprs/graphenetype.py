@@ -23,7 +23,6 @@ class ProjectType(DjangoObjectType):
     
     def resolve_votedByMe(self, info):
         if info.context.user.is_authenticated:
-            print("got user")
             curr_voter = get_user_model().objects.get(pk=info.context.user.id)
             all_voters = self.votedBy.all()
             if curr_voter in all_voters:
