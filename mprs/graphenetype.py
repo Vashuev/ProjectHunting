@@ -20,7 +20,8 @@ class ProjectType(DjangoObjectType):
 
     votedByMe = graphene.Boolean()
     logoUrl = graphene.String()
-    
+    voteCount = graphene.Int()
+
     def resolve_votedByMe(self, info):
         if info.context.user.is_authenticated:
             curr_voter = get_user_model().objects.get(pk=info.context.user.id)
@@ -31,6 +32,9 @@ class ProjectType(DjangoObjectType):
 
     def resolve_logoUrl(self, info):
         return info.context.build_absolute_uri(self.logo.url)
+
+    def resolve_voteCount(self, info):
+        return len(self.votedBy.all())
 
 class ScreenshotType(DjangoObjectType):
     class Meta:

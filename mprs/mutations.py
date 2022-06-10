@@ -26,14 +26,13 @@ class UpvoteProject(graphene.Mutation):
             projectInstance = ProjectModel.objects.get(pk=id)
             all_voters = projectInstance.votedBy.all()
             curr_voter = get_user_model().objects.get(pk=info.context.user.id)
+            # voteCount = len(all_voters)
             if not shouldRemoveVote and curr_voter not in all_voters:
                 projectInstance.votedBy.add(curr_voter)
-                projectInstance.voteCount += 1
-                projectInstance.save()
+                # voteCount += 1
             elif shouldRemoveVote and curr_voter in all_voters:
                 projectInstance.votedBy.remove(curr_voter)
-                projectInstance.voteCount -= 1
-                projectInstance.save()
+                # voteCount -= 1
 
             return cls(projectInstance=projectInstance, votedByMe=not shouldRemoveVote, message="", error = False)
         except:
