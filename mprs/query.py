@@ -42,10 +42,13 @@ class MprsQuery(graphene.ObjectType):
             return None
 
 
-    project_by_userid = graphene.List(ProjectType, id=graphene.ID(required=True))
-    def resolve_project_by_userid(root, info, id):
+    project_by_userid = graphene.List(ProjectType, id=graphene.ID())
+    def resolve_project_by_userid(root, info, id=-1):
         try:
-            owner = get_user_model().objects.get(pk=id)
+            if id == -1:
+                owner = get_user_model().objects.get(pk=info.context.user.id)
+            else:
+                owner = get_user_model().objects.get(pk=id)
             return ProjectModel.objects.filter(owner_id=owner)
         except:
             return None

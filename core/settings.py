@@ -169,9 +169,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 SITE_ID = 1
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-]
+CORS_ALLOWED_ORIGINS = env('DJANGO_CORS_ALLOWED_ORIGINS').split(',')
 
 # GRAPHENE = {
 #     "ATOMIC_MUTATIONS": True,
