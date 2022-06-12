@@ -1,6 +1,7 @@
 import sys
 from io import BytesIO
 
+import pillow_avif
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.forms import ImageField
 from PIL import Image
