@@ -1,7 +1,9 @@
-from django.db import models
-from django.utils.translation import gettext_lazy as _
+from core.utils import compressImage
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
 
 class NameField(models.CharField):
     def __init__(self, *args, **kwargs):
@@ -34,10 +36,18 @@ class ProjectModel(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        self.logo = compressImage(self.logo)
+        super(ProjectModel, self).save(*args, **kwargs)
+
 
 class ScreenshotModel(models.Model):
     image = models.ImageField(upload_to='screenshots')
     project_id = models.ForeignKey(ProjectModel,related_name="screenshots", on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        self.image = compressImage(self.image, lossless=True)
+        super(ScreenshotModel, self).save(*args, **kwargs)
 
 
 class CommentModel(models.Model):
